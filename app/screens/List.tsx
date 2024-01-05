@@ -1,56 +1,121 @@
-import { View, Text, Button, StyleSheet, TextInput, ActivityIndicator, FlatList, TouchableOpacity, Alert, Keyboard, Pressable } from 'react-native'
+import { View, Text, Button, StyleSheet, TextInput, ActivityIndicator, FlatList, TouchableOpacity, Alert, Keyboard, Pressable, Switch } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { addDoc, collection, deleteDoc, doc, onSnapshot, updateDoc } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, updateDoc, where } from 'firebase/firestore'
 import { FIREBASE_DB } from '../../firebaseConfig'
 import { Entypo, MaterialCommunityIcons, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import DateTimePicker from 'react-native-ui-datepicker';
+import moment from 'moment';
 
 export interface TODO {
     title: string,
     done: boolean,
-    id: string
+    id: string,
+    date: any
 }
 
 const List = ({ navigation }: any) => {
     const [todos, setTodos] = useState<TODO[]>([])
-    const [isModalVisible, setModalVisible] = useState(false);
     const [todo, setTodo] = useState('')
+    const [todoDate, setTodoDate] = useState<any>(new Date());
+    const [modeDatePicker, setModeDatePicker] = useState<any>();
     const [loading, setLoading] = useState(false)
     const [update, setUpdate] = useState(false)
     const [selectedItem, setSelectedItem] = useState('')
     const [todoType, setTodoType] = useState('Tutti')
+    const [isEnabledDate, setIsEnabledDate] = useState(false);
+    const [isEnabledDateHours, setIsEnabledDateHours] = useState(false);
+
+    const toggleSwitch = (toggle: boolean, type: any) => {
+        if (type === 'date') {
+            if (toggle === false && isEnabledDateHours === true) {
+                setIsEnabledDate(toggle)
+                setIsEnabledDateHours(toggle)
+            }
+            if (toggle === true) {
+                setModeDatePicker('date')
+            }
+            setIsEnabledDate(toggle)
+        }
+        if (type === 'hours' && toggle === true) {
+            setIsEnabledDate(toggle)
+            setIsEnabledDateHours(toggle)
+            setModeDatePicker('datetime')
+
+        } else if (type === 'hours' && !toggle) {
+            setModeDatePicker('date')
+            setIsEnabledDateHours(toggle)
+        }
+    };
+
+    const formatMomentData = (dateInput: any) => {
+        const momentDate = moment(dateInput);
+        const today = moment().startOf('day');
+        const tomorrow = moment().startOf('day').add(1, 'day');
+
+        if (momentDate.isSame(today, 'day') || momentDate.isSame(tomorrow, 'day')) {
+            // Data uguale a oggi o domani
+            return (
+                <Text style={{ fontSize: 14 }}>
+                    {momentDate.calendar()}
+                </Text>
+            );
+        } else if (momentDate.isBefore(today, 'day')) {
+            // Data inferiore a oggi
+            return (
+                <Text style={{ fontSize: 14, color: '#fc4040' }}>
+                    {momentDate.format('LLLL')}
+                </Text>
+            );
+        } else {
+            // Altrimenti, usa il formato di default
+            return (
+                <Text style={{ fontSize: 14 }}>
+                    {momentDate.format('LLLL')}
+                </Text>
+            );
+        }
+    };
 
     const textInputRef = useRef<TextInput>(null);
     const bottomSheetModalRef = useRef<BottomSheet>(null);
 
-    // variables
-    const snapPoints = useMemo(() => ['25%', '50%', '75%'], []);
+    const snapPoints = useMemo(() => ['50%', '75%', '100%'], []);
 
-    const openKeyboard = () => {
-        if (textInputRef.current) {
-            textInputRef.current.focus();
-        }
-    };
+    const resetForm = () => {
+        Keyboard.dismiss()
+        bottomSheetModalRef.current?.close()
+        setLoading(false)
+        setUpdate(false)
+        setTodo('')
+        setTodoDate(moment())
+        toggleSwitch(false, 'date')
+        setSelectedItem('')
+    }
+
     useEffect(() => {
-        const todoRef = collection(FIREBASE_DB, 'todos')
+        const todoRef = collection(FIREBASE_DB, 'todos');
 
-        const subscriber = onSnapshot(todoRef, {
+        const querys = query(
+            todoRef,
+            orderBy('date')  // Ordina per data crescente
+        );
 
+        const subscriber = onSnapshot(querys, {
             next: (snapshot) => {
-                const todos: TODO[] = []
+                const todos: TODO[] = [];
                 snapshot.docs.forEach(doc => {
                     todos.push({
                         id: doc.id,
                         ...doc.data()
-                    } as TODO)
-                })
-                setTodos(todos)
+                    } as TODO);
+                });
+                setTodos(todos);
             }
-        })
+        });
 
-
-        return () => subscriber()
-    }, [])
+        return () => subscriber();
+    }, []);
 
     const renderBackdrop = useCallback((props: any) => <BottomSheetBackdrop apparsOnIndex={0} disappearsOnIndex={-1} {...props} />, [])
 
@@ -77,11 +142,17 @@ const List = ({ navigation }: any) => {
                     break;
 
                 case 'edit':
-                    bottomSheetModalRef.current?.expand()
+                    if (item.date) {
+                        setTodoDate(item.date)
+                        toggleSwitch(true, 'date')
+                        bottomSheetModalRef.current?.expand()
+                    }
+                    if (!item.date) {
+                        bottomSheetModalRef.current?.snapToIndex(1)
+                    }
                     setUpdate(true)
                     setTodo(item.title)
                     setSelectedItem(item.id)
-                    openKeyboard()
                     break;
 
                 default:
@@ -92,13 +163,18 @@ const List = ({ navigation }: any) => {
 
         return (
             <View style={styles.listItem}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <Pressable onPress={() => onPress(item, 'done')}>
                         {item.done ? <MaterialIcons name="done" size={30} color="#38b338" /> : <Entypo name="circle" size={30} color="black" />}
                     </Pressable>
-                    <Text style={{ fontSize: 18 }}>
-                        {item.title}
-                    </Text>
+                    <View>
+                        <Text style={{ fontSize: 18 }}>
+                            {item.title}
+                        </Text>
+                        {item.date &&
+                            formatMomentData(item.date)
+                        }
+                    </View>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                     <Pressable onPress={() => onPress(item, 'edit')}><MaterialIcons name="edit" size={30} color="#4848ce" /></Pressable>
@@ -107,37 +183,21 @@ const List = ({ navigation }: any) => {
             </View>)
     }
 
-
-    const addTodo = async () => {
-        setLoading(true)
+    const addTodo = () => {
         if (update && selectedItem) {
             let itemRef = doc(FIREBASE_DB, 'todos', selectedItem)
-            await updateDoc(itemRef, { title: todo, done: false }).then(() => {
-                setTodo('')
-                Keyboard.dismiss()
-                setLoading(false)
-                setUpdate(false)
-                bottomSheetModalRef.current?.collapse()
+            updateDoc(itemRef, { title: todo, done: false, date: isEnabledDate ? moment(todoDate).format() : null }).then(() => {
+                resetForm()
             })
         } else {
-            await addDoc(collection(FIREBASE_DB, 'todos'), { title: todo, done: false }).then(() => {
-                setTodo('')
-                setLoading(false)
-                Keyboard.dismiss()
-                bottomSheetModalRef.current?.collapse()
+            addDoc(collection(FIREBASE_DB, 'todos'), { title: todo, done: false, date: isEnabledDate ? moment(todoDate).format() : null }).then(() => {
+                resetForm()
             })
         }
-
     }
 
     return (
         <View style={styles.container}>
-            <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ fontSize: 24, fontWeight: 'bold', }}>Promemoria</Text>
-                <Pressable><Ionicons name="settings-outline" size={24} color="black" /></Pressable>
-            </View>
-
-            <Text style={{ marginLeft: 3, fontSize: 16 }}>{todoType}</Text>
             {todos.length > 0 &&
                 <FlatList
                     style={styles.list}
@@ -154,12 +214,49 @@ const List = ({ navigation }: any) => {
             <BottomSheet
                 ref={bottomSheetModalRef}
                 enablePanDownToClose={true}
-                index={0}
+                index={-1}
                 backdropComponent={renderBackdrop}
-                snapPoints={snapPoints}>
+                snapPoints={snapPoints}
+                onChange={(index) => {
+                    if (index === 0) {
+                        resetForm()
+                    }
+                }}>
                 <View style={styles.form}>
-                    <TextInput ref={textInputRef} style={styles.input} placeholder='Aggiungi un promemoria' value={todo} onChangeText={(text: string) => setTodo(text)} />
-                    {loading ? <ActivityIndicator /> : <Button onPress={addTodo} title={update ? 'Aggiorna' : 'Aggiungi'} />}
+                    <TextInput
+                        style={styles.input}
+                        placeholder='Aggiungi un promemoria'
+                        value={todo}
+                        onChangeText={(text) => setTodo(text)}
+                    />
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text>Data:</Text>
+                            <Switch
+                                trackColor={{ false: '#767577', true: '#81b0ff' }}
+                                ios_backgroundColor="#3e3e3e"
+                                onValueChange={(toggle) => toggleSwitch(toggle, 'date')}
+                                value={isEnabledDate}
+                            />
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text>Data e Ora:</Text>
+                            <Switch
+                                trackColor={{ false: '#767577', true: '#81b0ff' }}
+                                ios_backgroundColor="#3e3e3e"
+                                onValueChange={(toggle) => toggleSwitch(toggle, 'hours')}
+                                value={isEnabledDateHours}
+                            />
+                        </View>
+                    </View>
+                    {isEnabledDate &&
+                        <DateTimePicker
+                            value={todoDate}
+                            onValueChange={(date) => setTodoDate(date)}
+                            mode={modeDatePicker}
+                        />
+                    }
+                    <Button onPress={addTodo} title={update ? 'Aggiorna' : 'Aggiungi'} />
                 </View>
             </BottomSheet>
         </View>
@@ -175,19 +272,19 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     form: {
-        marginTop: 30,
+        flex: 1,
+        alignItems: 'center',
         margin: 10,
-        flexDirection: 'row'
     },
     input: {
-        flex: 1,
-        marginRight: 10,
+        width: '100%',
         padding: 10,
         height: 40,
         borderWidth: 1,
         borderRadius: 4,
         borderColor: '#cccccc',
-        backgroundColor: '#ccccc1'
+        backgroundColor: '#ccccc1',
+        marginBottom: 15
     },
     list: {
         marginVertical: 10,

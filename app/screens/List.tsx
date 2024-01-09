@@ -1,11 +1,12 @@
 import { View, Text, Button, StyleSheet, TextInput, ActivityIndicator, FlatList, TouchableOpacity, Alert, Keyboard, Pressable, Switch } from 'react-native'
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, updateDoc, where } from 'firebase/firestore'
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from 'firebase/firestore'
 import { FIREBASE_DB } from '../../firebaseConfig'
 import { Entypo, MaterialCommunityIcons, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import DateTimePicker from 'react-native-ui-datepicker';
 import moment from 'moment';
+import { LoadingContext } from '../../store/LoadingContext';
 
 export interface TODO {
     title: string,
@@ -76,8 +77,7 @@ const List = ({ navigation }: any) => {
             );
         }
     };
-
-    const textInputRef = useRef<TextInput>(null);
+    const loadingCtx = useContext(LoadingContext)
     const bottomSheetModalRef = useRef<BottomSheet>(null);
 
     const snapPoints = useMemo(() => ['50%', '75%', '100%'], []);
@@ -93,28 +93,33 @@ const List = ({ navigation }: any) => {
         setSelectedItem('')
     }
 
+    const loadData = async () => {
+        loadingCtx.enableLoading();
+        try {
+            const todoRef = collection(FIREBASE_DB, 'todos');
+            const querys = query(
+                todoRef,
+                orderBy('date') // Ordina per data crescente
+            );
+
+            const snapshot = await getDocs(querys);
+            const todos: TODO[] = [];
+            snapshot.docs.forEach(doc => {
+                todos.push({
+                    id: doc.id,
+                    ...doc.data()
+                } as TODO);
+            });
+            setTodos(todos);
+        } catch (error) {
+            console.error("Error loading data: ", error);
+        } finally {
+            loadingCtx.disableLoading();
+        }
+    };
+
     useEffect(() => {
-        const todoRef = collection(FIREBASE_DB, 'todos');
-
-        const querys = query(
-            todoRef,
-            orderBy('date')  // Ordina per data crescente
-        );
-
-        const subscriber = onSnapshot(querys, {
-            next: (snapshot) => {
-                const todos: TODO[] = [];
-                snapshot.docs.forEach(doc => {
-                    todos.push({
-                        id: doc.id,
-                        ...doc.data()
-                    } as TODO);
-                });
-                setTodos(todos);
-            }
-        });
-
-        return () => subscriber();
+        loadData()
     }, []);
 
     const renderBackdrop = useCallback((props: any) => <BottomSheetBackdrop apparsOnIndex={0} disappearsOnIndex={-1} {...props} />, [])

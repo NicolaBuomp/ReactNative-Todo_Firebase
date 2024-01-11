@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet } from 'react-native'
 import React, { useContext } from 'react'
 import { AuthContext } from '../../context/AuthContext'
 import { NavigationContainer } from '@react-navigation/native'

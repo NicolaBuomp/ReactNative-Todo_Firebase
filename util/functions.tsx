@@ -14,7 +14,7 @@ export const formatMomentData = (item: any) => {
         // Data uguale a oggi o domani
         return (
             <Text style={{ fontSize: 14 }}>
-                {showTime ? momentDate.format('LT') : momentDate.calendar()}
+                {showTime ? `${momentDate.format('LT')}` : momentDate.calendar()}
             </Text>
         );
     } else if (momentDate.isBefore(today, 'day')) {
@@ -33,3 +33,9 @@ export const formatMomentData = (item: any) => {
         );
     }
 };
+
+
+export function parseDate(dateString: string) {
+    const [hours, minutes] = dateString.slice(11, 16).split(':');
+    return { hours: Number(hours), minutes: Number(minutes) };
+   }

@@ -1,10 +1,10 @@
-import { Alert, KeyboardAvoidingView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Alert, StyleSheet, Text, View } from 'react-native'
 import React, { useContext, useState } from 'react'
-import { TouchableOpacity } from '@gorhom/bottom-sheet';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { AUTH } from '../../firebaseConfig';
 import { AuthContext } from '../../context/AuthContext';
 import { LoadingContext } from '../../context/LoadingContext';
+import { Button, TextInput } from 'react-native-paper'
 
 const LoginScreen = ({ navigation }: any) => {
     const [email, setEmail] = useState('test@test.com');
@@ -16,12 +16,11 @@ const LoginScreen = ({ navigation }: any) => {
     const handleLogin = async () => {
         loadingCtx.enableLoading()
         try {
-            const userCredential = await signInWithEmailAndPassword(AUTH, email, password);
+            const userCredential = await signInWithEmailAndPassword(AUTH, email, password)
             const token = await userCredential.user.getIdToken();
             authCtx.authenticate(token, userCredential.user);
-        } catch (error) {
-            Alert.alert('Errore', 'Riprova');
-            console.log(error);
+        } catch (error:any) {
+            Alert.alert('Errore', error.code);
         } finally {
             loadingCtx.disableLoading()
         }
@@ -32,23 +31,21 @@ const LoginScreen = ({ navigation }: any) => {
         <View style={styles.container}>
             <Text style={styles.title}>Login</Text>
             <TextInput
-                style={styles.input}
-                placeholder="Inserisci l'email"
-                keyboardType="email-address"
-                autoCapitalize="none"
+                label="Inserisci l'email"
                 value={email}
                 onChangeText={text => setEmail(text)}
+                mode="outlined"
             />
             <TextInput
-                style={styles.input}
-                placeholder="Password"
+                label="Password"
                 onChangeText={text => setPassword(text)}
                 value={password}
-                secureTextEntry
+                mode="outlined"
+                right={<TextInput.Affix text="/100" />}
             />
-            <TouchableOpacity style={styles.button} onPress={handleLogin}>
-                <Text style={styles.buttonText}>Login</Text>
-            </TouchableOpacity>
+            <Button mode='contained' onPress={handleLogin}>
+                Login
+            </Button>
         </View>
         // </KeyboardAvoidingView>
     );
@@ -59,28 +56,11 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        gap: 15,
     },
     title: {
         fontSize: 24,
-        marginBottom: 20,
-    },
-    input: {
-        width: '80%',
-        borderWidth: 1,
-        borderColor: 'grey',
-        padding: 10,
         marginBottom: 10,
-    },
-    button: {
-        width: '80%',
-        backgroundColor: 'blue',
-        padding: 10,
-        marginTop: 20,
-    },
-    buttonText: {
-        color: 'white',
-        fontSize: 18,
-        textAlign: 'center',
     },
 });
 

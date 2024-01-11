@@ -16,7 +16,8 @@ export interface TODO {
 
 const List = ({ navigation }: any) => {
     const [todos, setTodos] = useState<any[]>([])
-    const [selectedItem, setSelectedItem] = useState('')
+    const [updatedTodoItem, setUpdatedTodo] = useState()
+
     const loadingCtx = useContext(LoadingContext)
 
     useEffect(() => {
@@ -38,6 +39,19 @@ const List = ({ navigation }: any) => {
 
 
     }, []);
+
+    const updateTodo = (item: any) => {
+        loadingCtx.enableLoading()
+        try {
+            setUpdatedTodo(item)
+            navigation.navigate('CreateToto', { item: item })
+        } catch (error) {
+            console.log(error);
+            
+        } finally {
+            loadingCtx.disableLoading()
+        }
+    }
 
     const deleteTodo = async (id: string) => {
         loadingCtx.enableLoading()
@@ -67,7 +81,7 @@ const List = ({ navigation }: any) => {
                     </View>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <Pressable onPress={() => setSelectedItem(item)}><MaterialIcons name="edit" size={30} color="#4848ce" /></Pressable>
+                    <Pressable onPress={() => updateTodo(item)}><MaterialIcons name="edit" size={30} color="#4848ce" /></Pressable>
                     <Pressable onPress={() => deleteTodo(item.id)}><MaterialCommunityIcons name="delete-outline" size={30} color="#e43a3a" /></Pressable>
                 </View>
             </View>)

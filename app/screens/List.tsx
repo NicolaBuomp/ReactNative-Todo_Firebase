@@ -1,12 +1,11 @@
-import { View, Text, Button, StyleSheet, TextInput, ActivityIndicator, FlatList, TouchableOpacity, Alert, Keyboard, Pressable, Switch } from 'react-native'
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from 'firebase/firestore'
-import { FIREBASE_DB } from '../../firebaseConfig'
-import { Entypo, MaterialCommunityIcons, MaterialIcons, Ionicons } from '@expo/vector-icons';
-import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import DateTimePicker from 'react-native-ui-datepicker';
-import moment from 'moment';
-import { LoadingContext } from '../../store/LoadingContext';
+import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native'
+import React, { useContext, useEffect, useState } from 'react'
+import { Entypo, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { LoadingContext } from '../../context/LoadingContext';
+import { formatMomentData } from '../../util/functions';
+import { DB } from '../../firebaseConfig';
+import { collection, deleteDoc, doc, getDocs, onSnapshot, updateDoc } from '@firebase/firestore';
+import { Button, TextInput } from 'react-native-paper'
 
 export interface TODO {
     title: string,
@@ -16,189 +15,62 @@ export interface TODO {
 }
 
 const List = ({ navigation }: any) => {
-    const [todos, setTodos] = useState<TODO[]>([])
-    const [todo, setTodo] = useState('')
-    const [todoDate, setTodoDate] = useState<any>(new Date());
-    const [modeDatePicker, setModeDatePicker] = useState<any>();
-    const [loading, setLoading] = useState(false)
-    const [update, setUpdate] = useState(false)
+    const [todos, setTodos] = useState<any[]>([])
     const [selectedItem, setSelectedItem] = useState('')
-    const [todoType, setTodoType] = useState('Tutti')
-    const [isEnabledDate, setIsEnabledDate] = useState(false);
-    const [isEnabledDateHours, setIsEnabledDateHours] = useState(false);
-
-    const toggleSwitch = (toggle: boolean, type: any) => {
-        if (type === 'date') {
-            if (toggle === false && isEnabledDateHours === true) {
-                setIsEnabledDate(toggle)
-                setIsEnabledDateHours(toggle)
-            }
-            if (toggle === true) {
-                setModeDatePicker('date')
-            }
-            setIsEnabledDate(toggle)
-        }
-        if (type === 'hours' && toggle === true) {
-            setIsEnabledDate(toggle)
-            setIsEnabledDateHours(toggle)
-            setModeDatePicker('datetime')
-
-        } else if (type === 'hours' && !toggle) {
-            setModeDatePicker('date')
-            setIsEnabledDateHours(toggle)
-        }
-    };
-
-    const formatMomentData = (dateInput: any) => {
-        const momentDate = moment(dateInput);
-        const today = moment().startOf('day');
-        const tomorrow = moment().startOf('day').add(1, 'day');
-
-        if (momentDate.isSame(today, 'day') || momentDate.isSame(tomorrow, 'day')) {
-            // Data uguale a oggi o domani
-            return (
-                <Text style={{ fontSize: 14 }}>
-                    {momentDate.calendar()}
-                </Text>
-            );
-        } else if (momentDate.isBefore(today, 'day')) {
-            // Data inferiore a oggi
-            return (
-                <Text style={{ fontSize: 14, color: '#fc4040' }}>
-                    {momentDate.format('LLLL')}
-                </Text>
-            );
-        } else {
-            // Altrimenti, usa il formato di default
-            return (
-                <Text style={{ fontSize: 14 }}>
-                    {momentDate.format('LLLL')}
-                </Text>
-            );
-        }
-    };
     const loadingCtx = useContext(LoadingContext)
-    const bottomSheetModalRef = useRef<BottomSheet>(null);
-
-    const snapPoints = useMemo(() => ['50%', '75%', '100%'], []);
-
-    const resetForm = () => {
-        Keyboard.dismiss()
-        bottomSheetModalRef.current?.close()
-        setLoading(false)
-        setUpdate(false)
-        setTodo('')
-        setTodoDate(moment())
-        toggleSwitch(false, 'date')
-        setSelectedItem('')
-    }
-
-    const loadData = async () => {
-        loadingCtx.enableLoading();
-        try {
-            const todoRef = collection(FIREBASE_DB, 'todos');
-            const querys = query(
-                todoRef,
-                orderBy('date') // Ordina per data crescente
-            );
-
-            const snapshot = await getDocs(querys);
-            const todos: TODO[] = [];
-            snapshot.docs.forEach(doc => {
-                todos.push({
-                    id: doc.id,
-                    ...doc.data()
-                } as TODO);
-            });
-            setTodos(todos);
-        } catch (error) {
-            console.error("Error loading data: ", error);
-        } finally {
-            loadingCtx.disableLoading();
-        }
-    };
 
     useEffect(() => {
-        loadData()
-    }, []);
+        loadingCtx.enableLoading()
+        try {
+            const unsubscribe = onSnapshot(collection(DB, 'todos'), (snapshot) => {
+                const newPosts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+                setTodos(newPosts);
+            });
 
-    const renderBackdrop = useCallback((props: any) => <BottomSheetBackdrop apparsOnIndex={0} disappearsOnIndex={-1} {...props} />, [])
+            return () => {
+                unsubscribe();
+            };
+        } catch (error) {
 
-    const renderTodo = ({ item }: any) => {
-        const onPress = async (item: any, typeAction: string) => {
-            let itemRef = doc(FIREBASE_DB, 'todos', item.id)
-            switch (typeAction) {
-                case 'done':
-                    await updateDoc(itemRef, { done: !item.done }).then(() => {
-                        setLoading(false)
-                    }).catch((err) => {
-                        console.log(err);
-                        setLoading(false)
-                    })
-                    break;
-
-                case 'delete':
-                    await deleteDoc(itemRef).then(() => {
-                        setLoading(false)
-                    }).catch((err) => {
-                        console.log(err);
-                        setLoading(false)
-                    })
-                    break;
-
-                case 'edit':
-                    if (item.date) {
-                        setTodoDate(item.date)
-                        toggleSwitch(true, 'date')
-                        bottomSheetModalRef.current?.expand()
-                    }
-                    if (!item.date) {
-                        bottomSheetModalRef.current?.snapToIndex(1)
-                    }
-                    setUpdate(true)
-                    setTodo(item.title)
-                    setSelectedItem(item.id)
-                    break;
-
-                default:
-                    break;
-            }
-
+        } finally {
+            loadingCtx.disableLoading()
         }
 
+
+    }, []);
+
+    const deleteTodo = async (id: string) => {
+        loadingCtx.enableLoading()
+        await deleteDoc(doc(DB, 'todos', id));
+        loadingCtx.disableLoading()
+    };
+
+    const toggleDoneTodo = async (item: any) => {
+        item.done = !item.done
+        await updateDoc(doc(DB, 'todos', item.id), item);
+    };
+
+    const renderTodo = ({ item }: any) => {
         return (
             <View style={styles.listItem}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Pressable onPress={() => onPress(item, 'done')}>
+                    <Pressable onPress={() => toggleDoneTodo(item)}>
                         {item.done ? <MaterialIcons name="done" size={30} color="#38b338" /> : <Entypo name="circle" size={30} color="black" />}
                     </Pressable>
                     <View>
                         <Text style={{ fontSize: 18 }}>
                             {item.title}
                         </Text>
-                        {item.date &&
-                            formatMomentData(item.date)
+                        {item.endDate &&
+                            formatMomentData(item)
                         }
                     </View>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <Pressable onPress={() => onPress(item, 'edit')}><MaterialIcons name="edit" size={30} color="#4848ce" /></Pressable>
-                    <Pressable onPress={() => onPress(item, 'delete')}><MaterialCommunityIcons name="delete-outline" size={30} color="#e43a3a" /></Pressable>
+                    <Pressable onPress={() => setSelectedItem(item)}><MaterialIcons name="edit" size={30} color="#4848ce" /></Pressable>
+                    <Pressable onPress={() => deleteTodo(item.id)}><MaterialCommunityIcons name="delete-outline" size={30} color="#e43a3a" /></Pressable>
                 </View>
             </View>)
-    }
-
-    const addTodo = () => {
-        if (update && selectedItem) {
-            let itemRef = doc(FIREBASE_DB, 'todos', selectedItem)
-            updateDoc(itemRef, { title: todo, done: false, date: isEnabledDate ? moment(todoDate).format() : null }).then(() => {
-                resetForm()
-            })
-        } else {
-            addDoc(collection(FIREBASE_DB, 'todos'), { title: todo, done: false, date: isEnabledDate ? moment(todoDate).format() : null }).then(() => {
-                resetForm()
-            })
-        }
     }
 
     return (
@@ -211,59 +83,9 @@ const List = ({ navigation }: any) => {
                     keyExtractor={(todo: TODO) => todo.id}
                 />
             }
-
             <View style={{ marginBottom: 25 }}>
-                <Button title='Aggiungi Promemoria' onPress={() => bottomSheetModalRef.current?.snapToIndex(1)} />
+                <Button mode='contained' onPress={() => navigation.navigate('CreateToto')}>Aggiungi Promemoria</Button>
             </View>
-
-            <BottomSheet
-                ref={bottomSheetModalRef}
-                enablePanDownToClose={true}
-                index={-1}
-                backdropComponent={renderBackdrop}
-                snapPoints={snapPoints}
-                onChange={(index) => {
-                    if (index === 0) {
-                        resetForm()
-                    }
-                }}>
-                <View style={styles.form}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder='Aggiungi un promemoria'
-                        value={todo}
-                        onChangeText={(text) => setTodo(text)}
-                    />
-                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text>Data:</Text>
-                            <Switch
-                                trackColor={{ false: '#767577', true: '#81b0ff' }}
-                                ios_backgroundColor="#3e3e3e"
-                                onValueChange={(toggle) => toggleSwitch(toggle, 'date')}
-                                value={isEnabledDate}
-                            />
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text>Data e Ora:</Text>
-                            <Switch
-                                trackColor={{ false: '#767577', true: '#81b0ff' }}
-                                ios_backgroundColor="#3e3e3e"
-                                onValueChange={(toggle) => toggleSwitch(toggle, 'hours')}
-                                value={isEnabledDateHours}
-                            />
-                        </View>
-                    </View>
-                    {isEnabledDate &&
-                        <DateTimePicker
-                            value={todoDate}
-                            onValueChange={(date) => setTodoDate(date)}
-                            mode={modeDatePicker}
-                        />
-                    }
-                    <Button onPress={addTodo} title={update ? 'Aggiorna' : 'Aggiungi'} />
-                </View>
-            </BottomSheet>
         </View>
     )
 }
@@ -272,25 +94,10 @@ export default List
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
         paddingHorizontal: 8,
         justifyContent: 'center',
     },
-    form: {
-        flex: 1,
-        alignItems: 'center',
-        margin: 10,
-    },
-    input: {
-        width: '100%',
-        padding: 10,
-        height: 40,
-        borderWidth: 1,
-        borderRadius: 4,
-        borderColor: '#cccccc',
-        backgroundColor: '#ccccc1',
-        marginBottom: 15
-    },
+
     list: {
         marginVertical: 10,
     },

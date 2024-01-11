@@ -1,10 +1,10 @@
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Alert, KeyboardAvoidingView, StyleSheet, Text, TextInput, View } from 'react-native'
 import React, { useContext, useState } from 'react'
 import { TouchableOpacity } from '@gorhom/bottom-sheet';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { AUTH } from '../../firebaseConfig';
-import { AuthContext } from '../../store/AuthContext';
-import { LoadingContext } from '../../store/LoadingContext';
+import { AuthContext } from '../../context/AuthContext';
+import { LoadingContext } from '../../context/LoadingContext';
 
 const LoginScreen = ({ navigation }: any) => {
     const [email, setEmail] = useState('test@test.com');
@@ -18,15 +18,17 @@ const LoginScreen = ({ navigation }: any) => {
         try {
             const userCredential = await signInWithEmailAndPassword(AUTH, email, password);
             const token = await userCredential.user.getIdToken();
-            authCtx.authenticate(token);
+            authCtx.authenticate(token, userCredential.user);
         } catch (error) {
             Alert.alert('Errore', 'Riprova');
             console.log(error);
+        } finally {
+            loadingCtx.disableLoading()
         }
-        loadingCtx.disableLoading()
     };
 
     return (
+        // <KeyboardAvoidingView behavior='padding'>
         <View style={styles.container}>
             <Text style={styles.title}>Login</Text>
             <TextInput
@@ -48,6 +50,7 @@ const LoginScreen = ({ navigation }: any) => {
                 <Text style={styles.buttonText}>Login</Text>
             </TouchableOpacity>
         </View>
+        // </KeyboardAvoidingView>
     );
 };
 

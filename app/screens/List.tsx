@@ -1,30 +1,29 @@
-import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native'
+import { View, Text, StyleSheet, FlatList, Pressable, TouchableOpacity, Platform } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import { Entypo, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { LoadingContext } from '../../context/LoadingContext';
 import { formatMomentData } from '../../util/functions';
 import { DB } from '../../firebaseConfig';
 import { collection, deleteDoc, doc, getDocs, onSnapshot, updateDoc } from '@firebase/firestore';
-import { Button, TextInput } from 'react-native-paper'
-
-export interface TODO {
-    title: string,
-    done: boolean,
-    id: string,
-    date: any
-}
+import { Button, Divider } from 'react-native-paper'
+import { useTheme } from '../../context/ThemeContext';
+import { TODO } from '../interfaces/Todo';
+import ModalConfirm from '../components/ModalConfirm';
 
 const List = ({ navigation }: any) => {
-    const [todos, setTodos] = useState<any[]>([])
-    const [updatedTodoItem, setUpdatedTodo] = useState()
+    const [todos, setTodos] = useState<TODO[]>([])
+    const [modalDelete, setModalDelete] = useState(false)
+    const [selectedItem, setSelectedItem] = useState<TODO>()
 
     const loadingCtx = useContext(LoadingContext)
+    const { theme } = useTheme()
 
     useEffect(() => {
+
         loadingCtx.enableLoading()
         try {
             const unsubscribe = onSnapshot(collection(DB, 'todos'), (snapshot) => {
-                const newPosts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+                const newPosts = snapshot.docs.map((doc): any => ({ id: doc.id, ...doc.data() }));
                 setTodos(newPosts);
             });
 
@@ -40,23 +39,15 @@ const List = ({ navigation }: any) => {
 
     }, []);
 
-    const updateTodo = (item: any) => {
-        loadingCtx.enableLoading()
-        try {
-            setUpdatedTodo(item)
-            navigation.navigate('CreateToto', { item: item })
-        } catch (error) {
-            console.log(error);
-            
-        } finally {
-            loadingCtx.disableLoading()
-        }
-    }
-
     const deleteTodo = async (id: string) => {
         loadingCtx.enableLoading()
-        await deleteDoc(doc(DB, 'todos', id));
-        loadingCtx.disableLoading()
+        setModalDelete(false)
+        await deleteDoc(doc(DB, 'todos', id)).then(() => {
+
+        }).catch(() => {
+
+        }).finally(() => loadingCtx.disableLoading());
+
     };
 
     const toggleDoneTodo = async (item: any) => {
@@ -64,31 +55,46 @@ const List = ({ navigation }: any) => {
         await updateDoc(doc(DB, 'todos', item.id), item);
     };
 
+    const prepareUpdateTodo = (item: TODO) => {
+        navigation.navigate('formTodo', { item: item })
+    }
+
+    function openModalConfirm(item: TODO) {
+        setSelectedItem(item)
+        setModalDelete(true)
+    }
+
+
+
     const renderTodo = ({ item }: any) => {
         return (
-            <View style={styles.listItem}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Pressable onPress={() => toggleDoneTodo(item)}>
-                        {item.done ? <MaterialIcons name="done" size={30} color="#38b338" /> : <Entypo name="circle" size={30} color="black" />}
-                    </Pressable>
-                    <View>
-                        <Text style={{ fontSize: 18 }}>
-                            {item.title}
-                        </Text>
-                        {item.endDate &&
-                            formatMomentData(item)
-                        }
+            <>
+                <View style={{ ...styles.listItem }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <Pressable onPress={() => toggleDoneTodo(item)}>
+                            {item.done ? <MaterialIcons name="done" size={30} color="#38b338" /> : <Entypo name="circle" size={30} color="black" />}
+                        </Pressable>
+                        <View>
+                            <Text style={{ fontSize: 18, color: theme.colors.onBackground }}>
+                                {item.title}
+                            </Text>
+                            {item.endDate &&
+                                formatMomentData(item, theme.colors.onBackground)
+                            }
+                        </View>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <Pressable onPress={() => prepareUpdateTodo(item)}><MaterialIcons name="edit" size={30} color="#4848ce" /></Pressable>
+                        <Pressable onPress={() => openModalConfirm(item)}><MaterialCommunityIcons name="delete-outline" size={30} color="#e43a3a" /></Pressable>
                     </View>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <Pressable onPress={() => updateTodo(item)}><MaterialIcons name="edit" size={30} color="#4848ce" /></Pressable>
-                    <Pressable onPress={() => deleteTodo(item.id)}><MaterialCommunityIcons name="delete-outline" size={30} color="#e43a3a" /></Pressable>
-                </View>
-            </View>)
+                <Divider />
+            </>
+        )
     }
 
     return (
-        <View style={styles.container}>
+        <View style={{ ...styles.container, backgroundColor: theme.colors.background }}>
             {todos.length > 0 &&
                 <FlatList
                     style={styles.list}
@@ -97,9 +103,13 @@ const List = ({ navigation }: any) => {
                     keyExtractor={(todo: TODO) => todo.id}
                 />
             }
-            <View style={{ marginBottom: 25 }}>
-                <Button mode='contained' onPress={() => navigation.navigate('CreateToto')}>Aggiungi Promemoria</Button>
+            {
+                !todos.length && <Text>Non ci sono promemoria da mostrare</Text>
+            }
+            <View style={{ marginBottom: Platform.OS === 'ios' ? 50 : 20 }}>
+                <Button mode='contained' onPress={() => navigation.navigate('formTodo')}>Aggiungi Promemoria</Button>
             </View>
+            <ModalConfirm visible={modalDelete} onDismiss={() => setModalDelete(false)} onConfirmDelete={() => deleteTodo(selectedItem!.id)} text={`Sicuro di voler eliminare questo promemoria ?`} />
         </View>
     )
 }
@@ -108,10 +118,10 @@ export default List
 
 const styles = StyleSheet.create({
     container: {
+        flex: 1,
         paddingHorizontal: 8,
         justifyContent: 'center',
     },
-
     list: {
         marginVertical: 10,
     },
@@ -122,8 +132,6 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         marginVertical: 5,
         marginHorizontal: 2,
-        borderRadius: 4,
-        backgroundColor: '#e3e3e3'
     },
     itemText: {},
     modal: {

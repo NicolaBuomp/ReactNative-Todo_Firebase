@@ -1,7 +1,7 @@
 import moment from "moment";
 import { Text } from "react-native";
 
-export const formatMomentData = (item: any) => {
+export const formatMomentData = (item: any, color: any) => {
     const dateInput = item.endDate;
     const showTime = item.showTime;
 
@@ -13,7 +13,7 @@ export const formatMomentData = (item: any) => {
     if (momentDate.isSame(today, 'day') || momentDate.isSame(tomorrow, 'day')) {
         // Data uguale a oggi o domani
         return (
-            <Text style={{ fontSize: 14 }}>
+            <Text style={{ fontSize: 14, color: color }}>
                 {showTime ? `${momentDate.format('LT')}` : momentDate.calendar()}
             </Text>
         );
@@ -27,7 +27,7 @@ export const formatMomentData = (item: any) => {
     } else {
         // Altrimenti, usa il formato di default
         return (
-            <Text style={{ fontSize: 14 }}>
+            <Text style={{ fontSize: 14, color: color }}>
                 {showTime ? momentDate.format('LLLL') : momentDate.format('LL')}
             </Text>
         );
@@ -38,4 +38,4 @@ export const formatMomentData = (item: any) => {
 export function parseDate(dateString: string) {
     const [hours, minutes] = dateString.slice(11, 16).split(':');
     return { hours: Number(hours), minutes: Number(minutes) };
-   }
+}

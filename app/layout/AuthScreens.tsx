@@ -2,14 +2,30 @@
 import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LoginScreen } from '../screens';
+import { useTheme } from '../../context/ThemeContext';
+import { IconButton, MD3DarkTheme } from 'react-native-paper';
 
 const Stack = createNativeStackNavigator();
 
+
+
+
 const AuthScreens = () => {
+    const { toggleTheme, theme } = useTheme();
+    const darkMode = theme === MD3DarkTheme;
+
+    const SwitchThemeRender = () => <IconButton
+        icon={darkMode ? 'white-balance-sunny' : 'moon-waxing-crescent'}
+        onPress={toggleTheme}
+        mode='contained'
+        animated
+    />
     return (
         <Stack.Navigator>
             <Stack.Screen name="Login" component={LoginScreen} options={{
-                headerShown: false
+                headerRight: () => <SwitchThemeRender />,
+                headerTintColor: theme.colors.primary,
+                headerStyle: { backgroundColor: theme.colors.background }
             }} />
         </Stack.Navigator >
     )

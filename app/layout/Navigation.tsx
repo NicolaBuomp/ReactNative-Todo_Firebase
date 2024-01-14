@@ -1,22 +1,22 @@
-import { StyleSheet } from 'react-native'
 import React, { useContext } from 'react'
 import { AuthContext } from '../../context/AuthContext'
 import { NavigationContainer } from '@react-navigation/native'
 import AuthScreens from './AuthScreens'
 import AuthenticatedScreens from './AuthenticatedScreens'
 import Loading from '../components/Loading'
+import { ThemeProvider } from '../../context/ThemeContext'
 
-const Navigation = () => {
-    const authCtx = useContext(AuthContext)
+function Navigation() {
+    const authCtx = useContext(AuthContext);
     return (
         <NavigationContainer>
-            {!authCtx.isAuthenticated ? <AuthScreens /> :
-                <AuthenticatedScreens />}
-            <Loading />
+            <ThemeProvider>
+                {(!authCtx.isAuthenticated ? <AuthScreens /> : <AuthenticatedScreens />)}
+                <Loading />
+            </ThemeProvider>
         </NavigationContainer>
-    )
+    );
 }
 
-export default Navigation
 
-const styles = StyleSheet.create({})
+export default Navigation

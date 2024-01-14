@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Switch, Pressable, Alert } from 'react-native'
+import { StyleSheet, Text, View, Platform, Alert } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore'
 import { DB } from '../../firebaseConfig'
@@ -8,6 +8,7 @@ import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates'
 import { Button, TextInput } from 'react-native-paper'
 import { useRoute } from '@react-navigation/native'
 import { parseDate } from '../../util/functions'
+import { useTheme } from '../../context/ThemeContext'
 
 const CreateTodoScreen = ({ navigation }: any) => {
     const [todo, setTodo] = useState('')
@@ -18,10 +19,11 @@ const CreateTodoScreen = ({ navigation }: any) => {
     const [itemForUpdate, setItemForUpdate] = useState<any>();
 
     const loadingCtx = useContext(LoadingContext)
-    const route = useRoute()
+    const { theme } = useTheme()
+    const route: any = useRoute()
 
     useEffect(() => {
-        if(route.params?.item) {
+        if (route.params?.item) {
             let item = route.params?.item
             setItemForUpdate(item)
             setTodo(item.title)
@@ -29,7 +31,7 @@ const CreateTodoScreen = ({ navigation }: any) => {
             item.showTime ? setTodoTime(parseDate(item.endDate)) : null
         }
     }, [])
-    
+
 
     const onDismissSingle = React.useCallback(() => {
         setIsEnabledDate(false);
@@ -83,53 +85,56 @@ const CreateTodoScreen = ({ navigation }: any) => {
     }
 
     return (
-        <View style={styles.container}>
-            <TextInput
-                style={styles.input}
-                label='Aggiungi un promemoria'
-                value={todo}
-                onChangeText={(text) => setTodo(text)}
-                mode='outlined'
-            />
-            <View style={{ gap: 20 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Button onPress={() => setIsEnabledDate(true)} mode='contained' >Data</Button>
-                    {
-                        todoDate ? <Text>{moment(itemForUpdate.endDate).format('LLLL')}</Text> : null
-                    }
-                    
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Button disabled={!todoDate} onPress={() => setIsEnabledDateHours(true)} mode='contained'>Ora</Button>
-                    {
-                        todoTime ? <Text>{`Alle ${todoTime.hours}:${todoTime.minutes}`}</Text> : null
-                    }
-                </View>
-            </View>
-            {isEnabledDate &&
-                <DatePickerModal
-                    locale="it"
-                    mode="single"
-                    visible={isEnabledDate}
-                    onDismiss={onDismissSingle}
-                    date={todoDate ? todoDate : new Date()}
-                    onConfirm={onConfirmSingle}
-                    presentationStyle='pageSheet'
-                    inputEnabled={false}
-                    startYear={2024}
-                    validRange={{ startDate: new Date() }}
+        <View style={{ ...styles.container, backgroundColor: theme.colors.background }}>
+            <View style={{ ...styles.container, backgroundColor: theme.colors.background }}>
+                <TextInput
+                    style={styles.input}
+                    label='Aggiungi un promemoria'
+                    value={todo}
+                    onChangeText={(text) => setTodo(text)}
+                    mode='outlined'
                 />
-            }
-            {isEnabledDateHours &&
-                <TimePickerModal
-                    visible={isEnabledDateHours}
-                    onDismiss={onDismissTime}
-                    onConfirm={onConfirmTime}
-                    hours={todoTime ? todoTime.hours : null}
-                    minutes={todoTime ? todoTime.minutes : null}
-                />}
+                <View style={{ gap: 20 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <Button onPress={() => setIsEnabledDate(true)} mode='contained' >Data</Button>
+                        {
+                            todoDate ? <Text style={{ color: theme.colors.onBackground }}>{moment(itemForUpdate ? itemForUpdate.endDate : todoDate).format('LLLL')}</Text> : null
+                        }
+
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <Button disabled={!todoDate} onPress={() => setIsEnabledDateHours(true)} mode='contained'>Ora</Button>
+                        {
+                            todoTime ? <Text style={{ color: theme.colors.onBackground }}>{`Alle ${todoTime.hours}:${todoTime.minutes}`}</Text> : null
+                        }
+                    </View>
+                </View>
+                {isEnabledDate &&
+                    <DatePickerModal
+                        locale="it"
+                        mode="single"
+                        visible={isEnabledDate}
+                        onDismiss={onDismissSingle}
+                        date={todoDate ? todoDate : new Date()}
+                        onConfirm={onConfirmSingle}
+                        presentationStyle='pageSheet'
+                        inputEnabled={false}
+                        startYear={2024}
+                        validRange={{ startDate: new Date() }}
+                    />
+                }
+                {isEnabledDateHours &&
+                    <TimePickerModal
+                        visible={isEnabledDateHours}
+                        onDismiss={onDismissTime}
+                        onConfirm={onConfirmTime}
+                        hours={todoTime ? todoTime.hours : null}
+                        minutes={todoTime ? todoTime.minutes : null}
+                    />}
+
+            </View>
             <View style={styles.buttonContainer}>
-                <Button onPress={addTodo} mode='contained-tonal'>{itemForUpdate ? 'Aggiorna' : 'Aggiungi'}</Button>
+                <Button onPress={addTodo} mode='contained'>{itemForUpdate ? 'Aggiorna' : 'Aggiungi'}</Button>
             </View>
         </View>
     )
@@ -140,13 +145,13 @@ export default CreateTodoScreen
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        marginHorizontal: 8,
-        marginTop: 20
+        paddingHorizontal: 8,
+        paddingTop: 20
     },
     input: {
         marginBottom: 15
     },
     buttonContainer: {
-        marginTop: 10,
+        paddingBottom: Platform.OS === 'ios' ? 50 : 20,
     }
 })

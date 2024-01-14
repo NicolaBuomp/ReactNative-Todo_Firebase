@@ -1,7 +1,7 @@
 
 import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { LoginScreen } from '../screens';
+import { LoginScreen, Signup } from '../screens';
 import { useTheme } from '../../context/ThemeContext';
 import { IconButton, MD3DarkTheme } from 'react-native-paper';
 
@@ -23,6 +23,11 @@ const AuthScreens = () => {
     return (
         <Stack.Navigator>
             <Stack.Screen name="Login" component={LoginScreen} options={{
+                headerRight: () => <SwitchThemeRender />,
+                headerTintColor: theme.colors.primary,
+                headerStyle: { backgroundColor: theme.colors.background }
+            }} />
+            <Stack.Screen name="signup" component={Signup} options={{
                 headerRight: () => <SwitchThemeRender />,
                 headerTintColor: theme.colors.primary,
                 headerStyle: { backgroundColor: theme.colors.background }

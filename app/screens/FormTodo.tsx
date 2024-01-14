@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View, Platform, Alert } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore'
-import { DB } from '../../firebaseConfig'
+import { AUTH, DB } from '../../firebaseConfig'
 import { LoadingContext } from '../../context/LoadingContext'
 import moment from 'moment'
 import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates'
@@ -9,8 +9,9 @@ import { Button, TextInput } from 'react-native-paper'
 import { useRoute } from '@react-navigation/native'
 import { parseDate } from '../../util/functions'
 import { useTheme } from '../../context/ThemeContext'
+import { AuthContext } from '../../context/AuthContext'
 
-const CreateTodoScreen = ({ navigation }: any) => {
+const FormTodo = ({ navigation }: any) => {
     const [todo, setTodo] = useState('')
     const [isEnabledDate, setIsEnabledDate] = useState(false);
     const [isEnabledDateHours, setIsEnabledDateHours] = useState(false);
@@ -23,6 +24,7 @@ const CreateTodoScreen = ({ navigation }: any) => {
     const route: any = useRoute()
 
     useEffect(() => {
+
         if (route.params?.item) {
             let item = route.params?.item
             setItemForUpdate(item)
@@ -65,7 +67,8 @@ const CreateTodoScreen = ({ navigation }: any) => {
             title: todo,
             done: false,
             showTime: todoTime ? true : false,
-            endDate: date
+            endDate: date,
+            userId: AUTH.currentUser?.uid
         }
 
         try {
@@ -75,7 +78,7 @@ const CreateTodoScreen = ({ navigation }: any) => {
                 const docRef = doc(collection(DB, 'todos'), itemForUpdate.id)
                 await updateDoc(docRef, data);
             }
-            navigation.navigate('list');
+            navigation.navigate('todos');
         } catch (err: any) {
             Alert.alert(err.code);
             console.error(err);
@@ -140,7 +143,7 @@ const CreateTodoScreen = ({ navigation }: any) => {
     )
 }
 
-export default CreateTodoScreen
+export default FormTodo
 
 const styles = StyleSheet.create({
     container: {

@@ -1,11 +1,7 @@
-import { Alert, StyleSheet } from 'react-native'
-import React, { useContext, useState } from 'react'
-import { getAuth } from 'firebase/auth'
-import { List, CreateTodoScreen } from '../screens'
+import { StyleSheet } from 'react-native'
+import React from 'react'
+import { Todos, FormTodo } from '../screens'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import { AuthContext } from '../../context/AuthContext'
-import { LoadingContext } from '../../context/LoadingContext'
-import { IconButton } from 'react-native-paper'
 import { useTheme } from '../../context/ThemeContext'
 import MyMenu from '../components/Menu'
 
@@ -16,13 +12,13 @@ const AuthenticatedScreens = () => {
 
     return (
         <Stack.Navigator initialRouteName='Home' >
-            <Stack.Screen name="list" component={List} options={{
+            <Stack.Screen name="todos" component={Todos} options={{
                 headerRight: () => <MyMenu />,
                 headerTitle: 'Promemoria',
                 headerTintColor: theme.colors.primary,
                 headerStyle: { backgroundColor: theme.colors.background }
             }} />
-            <Stack.Screen name="formTodo" component={CreateTodoScreen} options={{
+            <Stack.Screen name="formTodo" component={FormTodo} options={{
                 headerRight: () => <MyMenu />,
                 headerTitle: 'Crea Promemoria',
                 headerBackTitle: 'Annulla',

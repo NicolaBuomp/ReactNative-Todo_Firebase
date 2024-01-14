@@ -3,40 +3,44 @@ import React, { useContext, useEffect, useState } from 'react'
 import { Entypo, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { LoadingContext } from '../../context/LoadingContext';
 import { formatMomentData } from '../../util/functions';
-import { DB } from '../../firebaseConfig';
-import { collection, deleteDoc, doc, getDocs, onSnapshot, updateDoc } from '@firebase/firestore';
-import { Button, Divider } from 'react-native-paper'
+import { AUTH, DB } from '../../firebaseConfig';
+import { collection, deleteDoc, doc, getDocs, onSnapshot, query, updateDoc, where } from '@firebase/firestore';
+import { Button, Divider, IconButton } from 'react-native-paper'
 import { useTheme } from '../../context/ThemeContext';
 import { TODO } from '../interfaces/Todo';
 import ModalConfirm from '../components/ModalConfirm';
+import { AuthContext } from '../../context/AuthContext';
 
-const List = ({ navigation }: any) => {
+const Todos = ({ navigation }: any) => {
     const [todos, setTodos] = useState<TODO[]>([])
     const [modalDelete, setModalDelete] = useState(false)
     const [selectedItem, setSelectedItem] = useState<TODO>()
 
     const loadingCtx = useContext(LoadingContext)
+    const user = useContext(AuthContext)
     const { theme } = useTheme()
 
     useEffect(() => {
-
         loadingCtx.enableLoading()
+        const userId = AUTH.currentUser?.uid;
         try {
-            const unsubscribe = onSnapshot(collection(DB, 'todos'), (snapshot) => {
-                const newPosts = snapshot.docs.map((doc): any => ({ id: doc.id, ...doc.data() }));
-                setTodos(newPosts);
-            });
+            if (userId) {
+                const todosCollection = collection(DB, 'todos')
+                const userQueryTodo = query(todosCollection, where('userId', '==', userId))
+                const unsubscribe = onSnapshot(userQueryTodo, (snapshot) => {
+                    const data = snapshot.docs.map((doc): any => ({ id: doc.id, ...doc.data() }));
+                    setTodos(data);
+                });
 
-            return () => {
-                unsubscribe();
-            };
+                return () => {
+                    unsubscribe();
+                };
+            }
         } catch (error) {
 
         } finally {
             loadingCtx.disableLoading()
         }
-
-
     }, []);
 
     const deleteTodo = async (id: string) => {
@@ -104,23 +108,28 @@ const List = ({ navigation }: any) => {
                 />
             }
             {
-                !todos.length && <Text>Non ci sono promemoria da mostrare</Text>
+                !todos.length && <View style={{ alignItems: 'center', marginTop: 50 }}><Text style={{ color: theme.colors.onBackground, fontSize: 20 }}>Non ci sono promemoria da mostrare</Text></View>
             }
-            <View style={{ marginBottom: Platform.OS === 'ios' ? 50 : 20 }}>
-                <Button mode='contained' onPress={() => navigation.navigate('formTodo')}>Aggiungi Promemoria</Button>
+            <View style={{ marginBottom: Platform.OS === 'ios' ? 50 : 20, alignItems: 'center' }}>
+                {/* <Button mode='contained' onPress={() => navigation.navigate('formTodo')}>Aggiungi Promemoria</Button> */}
+                <IconButton icon={'plus'}
+                    onPress={() => navigation.navigate('formTodo')}
+                    mode='contained'
+                    size={55}
+                    animated />
             </View>
             <ModalConfirm visible={modalDelete} onDismiss={() => setModalDelete(false)} onConfirmDelete={() => deleteTodo(selectedItem!.id)} text={`Sicuro di voler eliminare questo promemoria ?`} />
         </View>
     )
 }
 
-export default List
+export default Todos
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingHorizontal: 8,
-        justifyContent: 'center',
+        justifyContent: 'space-between',
     },
     list: {
         marginVertical: 10,

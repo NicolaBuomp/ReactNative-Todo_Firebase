@@ -35,9 +35,8 @@ const LoginScreen = ({ navigation }: any) => {
 
     return (
         <View style={{ ...styles.container, backgroundColor: theme.colors.background }}>
-            <Text style={{ ...styles.title, color: theme.colors.onBackground }}>Login</Text>
             <TextInput
-                style={{ width: '90%' }}
+                style={{ width: '90%', marginTop: 150 }}
                 label="Inserisci l'email"
                 value={email}
                 onChangeText={text => setEmail(text)}
@@ -58,9 +57,15 @@ const LoginScreen = ({ navigation }: any) => {
                 }
                 style={{ width: '90%' }}
             />
-            <Button mode='contained' onPress={handleLogin}>
-                Login
-            </Button>
+            <View style={{ flexDirection: 'row', gap: 20 }}>
+                <Button mode='outlined' onPress={() => navigation.navigate('signup')} style={{ width: 150 }}>
+                    Registrati
+                </Button>
+                <Button mode='contained' onPress={handleLogin} style={{ width: 150 }}>
+                    Login
+                </Button>
+            </View>
+
         </View>
     );
 };
@@ -68,13 +73,8 @@ const LoginScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
         alignItems: 'center',
         gap: 15,
-    },
-    title: {
-        fontSize: 24,
-        marginBottom: 10,
     },
 });
 

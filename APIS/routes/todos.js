@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
 
         const todos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        res.status(200).send(todos);
+        res.status(200).json(todos);
     } catch (error) {
         console.error('Error getting todos', error);
         res.status(500).send('Internal Server Error');
@@ -80,7 +80,7 @@ router.delete('/delete-todo/:id', async (req, res) => {
         // Esegui l'eliminazione del documento
         await todoRef.delete();
 
-        res.status(200).send('Todo deleted successfully').redirect('/');
+        res.status(200).send('Todo deleted successfully');
     } catch (error) {
         console.error('Error deleting todo', error);
         res.status(500).send('Internal Server Error');

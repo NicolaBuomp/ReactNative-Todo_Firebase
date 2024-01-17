@@ -9,7 +9,10 @@ import { Button, TextInput } from 'react-native-paper'
 import { useRoute } from '@react-navigation/native'
 import { parseDate } from '../../util/functions'
 import { useTheme } from '../../context/ThemeContext'
-import { AuthContext } from '../../context/AuthContext'
+import { HttpService } from '../service/Http.service'
+
+
+
 
 const FormTodo = ({ navigation }: any) => {
     const [todo, setTodo] = useState('')
@@ -22,6 +25,7 @@ const FormTodo = ({ navigation }: any) => {
     const loadingCtx = useContext(LoadingContext)
     const { theme } = useTheme()
     const route: any = useRoute()
+    const httpService = HttpService()
 
     useEffect(() => {
 
@@ -73,10 +77,10 @@ const FormTodo = ({ navigation }: any) => {
 
         try {
             if (!itemForUpdate) {
-                await addDoc(collection(DB, 'todos'), data);
+                httpService.CREATE('todos/create-todo', data)
+                // await addDoc(collection(DB, 'todos'), data);
             } else {
-                const docRef = doc(collection(DB, 'todos'), itemForUpdate.id)
-                await updateDoc(docRef, data);
+                httpService.UPDATE('todos/update-todo', itemForUpdate.id, data)
             }
             navigation.navigate('todos');
         } catch (err: any) {

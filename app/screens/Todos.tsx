@@ -1,57 +1,42 @@
-import { View, Text, StyleSheet, FlatList, Pressable, TouchableOpacity, Platform } from 'react-native'
+import { View, Text, StyleSheet, FlatList, Pressable, TouchableOpacity, Platform, Alert } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import { Entypo, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { LoadingContext } from '../../context/LoadingContext';
 import { formatMomentData } from '../../util/functions';
 import { AUTH, DB } from '../../firebaseConfig';
 import { collection, deleteDoc, doc, getDocs, onSnapshot, query, updateDoc, where } from '@firebase/firestore';
-import { Button, Divider, IconButton } from 'react-native-paper'
+import { Divider, IconButton } from 'react-native-paper'
 import { useTheme } from '../../context/ThemeContext';
 import { TODO } from '../interfaces/Todo';
 import ModalConfirm from '../components/ModalConfirm';
-import { AuthContext } from '../../context/AuthContext';
+import { HttpService } from '../service/Http.service';
 
 const Todos = ({ navigation }: any) => {
     const [todos, setTodos] = useState<TODO[]>([])
     const [modalDelete, setModalDelete] = useState(false)
     const [selectedItem, setSelectedItem] = useState<TODO>()
 
-    const loadingCtx = useContext(LoadingContext)
-    const user = useContext(AuthContext)
     const { theme } = useTheme()
+    const httpService = HttpService()
 
     useEffect(() => {
-        loadingCtx.enableLoading()
-        const userId = AUTH.currentUser?.uid;
-        try {
-            if (userId) {
-                const todosCollection = collection(DB, 'todos')
-                const userQueryTodo = query(todosCollection, where('userId', '==', userId))
-                const unsubscribe = onSnapshot(userQueryTodo, (snapshot) => {
-                    const data = snapshot.docs.map((doc): any => ({ id: doc.id, ...doc.data() }));
-                    setTodos(data);
-                });
-
-                return () => {
-                    unsubscribe();
-                };
-            }
-        } catch (error) {
-
-        } finally {
-            loadingCtx.disableLoading()
-        }
+        getData()
     }, []);
 
+    const getData = () => {
+        httpService.GET('todos').then(data => {
+            setTodos(data)
+        })
+    }
+
+
     const deleteTodo = async (id: string) => {
-        loadingCtx.enableLoading()
         setModalDelete(false)
-        await deleteDoc(doc(DB, 'todos', id)).then(() => {
-
-        }).catch(() => {
-
-        }).finally(() => loadingCtx.disableLoading());
-
+        httpService.DELETE('todos/delete-todo', id).then((res) => {
+            if (res) {
+                getData()
+            }
+        })
     };
 
     const toggleDoneTodo = async (item: any) => {

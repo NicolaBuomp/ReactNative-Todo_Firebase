@@ -9,34 +9,36 @@ import { Divider, IconButton } from 'react-native-paper'
 import { useTheme } from '../../context/ThemeContext';
 import { TODO } from '../interfaces/Todo';
 import ModalConfirm from '../components/ModalConfirm';
-import { HttpService } from '../service/Http.service';
+import { FirebaseService } from '../service/firebase.service';
 
 const Todos = ({ navigation }: any) => {
     const [todos, setTodos] = useState<TODO[]>([])
     const [modalDelete, setModalDelete] = useState(false)
     const [selectedItem, setSelectedItem] = useState<TODO>()
 
+    const loadingCtx = useContext(LoadingContext)
+
     const { theme } = useTheme()
-    const httpService = HttpService()
+
+    const firebaseService = FirebaseService()
 
     useEffect(() => {
-        getData()
-    }, []);
+        const unsubscribe = firebaseService.subscribeData("todos", (data) => {
+            setTodos(data);
+        });
 
-    const getData = () => {
-        httpService.GET('todos').then(data => {
-            setTodos(data)
-        })
-    }
+        return () => unsubscribe();
+    }, []);
 
 
     const deleteTodo = async (id: string) => {
         setModalDelete(false)
-        httpService.DELETE('todos/delete-todo', id).then((res) => {
-            if (res) {
-                getData()
-            }
-        })
+        try {
+            await firebaseService.deleteData('todos', id)
+        } catch (error) {
+            console.log(error);
+
+        }
     };
 
     const toggleDoneTodo = async (item: any) => {

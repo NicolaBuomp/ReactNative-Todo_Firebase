@@ -9,7 +9,7 @@ import { Button, TextInput } from 'react-native-paper'
 import { useRoute } from '@react-navigation/native'
 import { parseDate } from '../../util/functions'
 import { useTheme } from '../../context/ThemeContext'
-import { HttpService } from '../service/Http.service'
+import { FirebaseService } from '../service/firebase.service'
 
 
 
@@ -22,13 +22,12 @@ const FormTodo = ({ navigation }: any) => {
     const [todoTime, setTodoTime] = useState<any>(false);
     const [itemForUpdate, setItemForUpdate] = useState<any>();
 
-    const loadingCtx = useContext(LoadingContext)
     const { theme } = useTheme()
     const route: any = useRoute()
-    const httpService = HttpService()
+
+    const firebaseService = FirebaseService()
 
     useEffect(() => {
-
         if (route.params?.item) {
             let item = route.params?.item
             setItemForUpdate(item)
@@ -64,7 +63,6 @@ const FormTodo = ({ navigation }: any) => {
     );
 
     const addTodo = async () => {
-        loadingCtx.enableLoading()
         let date = todoDate ? todoTime ? moment(todoDate).set({ 'hour': todoTime.hours, 'minute': todoTime.minutes }).format() : moment(todoDate).format() : null
 
         const data = {
@@ -75,20 +73,13 @@ const FormTodo = ({ navigation }: any) => {
             userId: AUTH.currentUser?.uid
         }
 
-        try {
-            if (!itemForUpdate) {
-                httpService.CREATE('todos/create-todo', data)
-                // await addDoc(collection(DB, 'todos'), data);
-            } else {
-                httpService.UPDATE('todos/update-todo', itemForUpdate.id, data)
-            }
-            navigation.navigate('todos');
-        } catch (err: any) {
-            Alert.alert(err.code);
-            console.error(err);
-        } finally {
-            loadingCtx.disableLoading();
+        if (!itemForUpdate) {
+            await firebaseService.postData('todos', data)
+            // await addDoc(collection(DB, 'todos'), data);
+        } else {
+
         }
+
     }
 
     return (

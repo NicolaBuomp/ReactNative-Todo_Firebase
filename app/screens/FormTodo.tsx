@@ -1,8 +1,5 @@
 import { StyleSheet, Text, View, Platform, Alert } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
-import { addDoc, collection, doc, updateDoc } from 'firebase/firestore'
-import { AUTH, DB } from '../../firebaseConfig'
-import { LoadingContext } from '../../context/LoadingContext'
 import moment from 'moment'
 import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates'
 import { Button, TextInput } from 'react-native-paper'
@@ -10,6 +7,7 @@ import { useRoute } from '@react-navigation/native'
 import { parseDate } from '../../util/functions'
 import { useTheme } from '../../context/ThemeContext'
 import { FirebaseService } from '../service/firebase.service'
+import { useAuth } from '../hook/useAuth'
 
 
 
@@ -24,6 +22,8 @@ const FormTodo = ({ navigation }: any) => {
 
     const { theme } = useTheme()
     const route: any = useRoute()
+
+    const { user } = useAuth();
 
     const firebaseService = FirebaseService()
 
@@ -70,15 +70,22 @@ const FormTodo = ({ navigation }: any) => {
             done: false,
             showTime: todoTime ? true : false,
             endDate: date,
-            userId: AUTH.currentUser?.uid
+            userId: user!.uid
         }
 
-        if (!itemForUpdate) {
-            await firebaseService.postData('todos', data)
-            // await addDoc(collection(DB, 'todos'), data);
-        } else {
-
+        try {
+            if (!itemForUpdate) {
+                await firebaseService.postData('todos', data)
+            } else {
+                await firebaseService.putData('todos', itemForUpdate.id, data)
+            }
+        } catch (error: any) {
+            Alert.alert('Errore', error)
+        } finally {
+            navigation.navigate('todos')
         }
+
+        
 
     }
 

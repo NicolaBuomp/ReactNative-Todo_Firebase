@@ -3,8 +3,8 @@ import { Button, Divider, Drawer, IconButton, MD3DarkTheme, Menu } from 'react-n
 import { useTheme } from '../../context/ThemeContext';
 import { AuthContext } from '../../context/AuthContext';
 import { LoadingContext } from '../../context/LoadingContext';
-import { getAuth } from 'firebase/auth'
 import { Alert } from 'react-native';
+import { auth } from '../../firebaseConfig';
 
 
 const MyMenu = () => {
@@ -22,7 +22,7 @@ const MyMenu = () => {
 
     function logout() {
         loadingCtx.enableLoading()
-        getAuth().signOut().then(() => {
+        auth.signOut().then(() => {
             authCtx.logout()
         }).catch((error) => {
             Alert.alert(error.code, '')

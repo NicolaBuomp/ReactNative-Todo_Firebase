@@ -1,10 +1,7 @@
-import { View, Text, StyleSheet, FlatList, Pressable, TouchableOpacity, Platform, Alert } from 'react-native'
-import React, { useContext, useEffect, useState } from 'react'
+import { View, Text, StyleSheet, FlatList, Pressable, TouchableOpacity, Platform } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import { Entypo, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
-import { LoadingContext } from '../../context/LoadingContext';
 import { formatMomentData } from '../../util/functions';
-import { AUTH, DB } from '../../firebaseConfig';
-import { collection, deleteDoc, doc, getDocs, onSnapshot, query, updateDoc, where } from '@firebase/firestore';
 import { Divider, IconButton } from 'react-native-paper'
 import { useTheme } from '../../context/ThemeContext';
 import { TODO } from '../interfaces/Todo';
@@ -15,8 +12,6 @@ const Todos = ({ navigation }: any) => {
     const [todos, setTodos] = useState<TODO[]>([])
     const [modalDelete, setModalDelete] = useState(false)
     const [selectedItem, setSelectedItem] = useState<TODO>()
-
-    const loadingCtx = useContext(LoadingContext)
 
     const { theme } = useTheme()
 
@@ -43,7 +38,7 @@ const Todos = ({ navigation }: any) => {
 
     const toggleDoneTodo = async (item: any) => {
         item.done = !item.done
-        await updateDoc(doc(DB, 'todos', item.id), item);
+        await firebaseService.putData('todos', item.id, item)
     };
 
     const prepareUpdateTodo = (item: TODO) => {

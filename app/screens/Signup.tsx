@@ -2,8 +2,8 @@ import { StyleSheet, Text, View } from 'react-native'
 import React, { useContext, useState } from 'react'
 import { useTheme } from '../../context/ThemeContext'
 import { Button, TextInput, IconButton } from 'react-native-paper'
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth'
-import { AUTH, DB } from '../../firebaseConfig'
+import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { auth, db } from '../../firebaseConfig'
 import { addDoc, collection } from '@firebase/firestore'
 import { LoadingContext } from '../../context/LoadingContext'
 import { AuthContext } from '../../context/AuthContext'
@@ -24,11 +24,11 @@ const Signup = ({ navigation }: any) => {
         loadingCtx.enableLoading()
 
         try {
-            const userCredential = await createUserWithEmailAndPassword(AUTH, email, password);
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             await updateProfile(user, { displayName });
 
-            await addDoc(collection(DB, 'users'), {
+            await addDoc(collection(db, 'users'), {
                 id: user.uid,
                 displayName,
                 email,
@@ -43,7 +43,7 @@ const Signup = ({ navigation }: any) => {
 
     const handleLogin = async () => {
         try {
-            const userCredential = await signInWithEmailAndPassword(AUTH, email, password)
+            const userCredential = await signInWithEmailAndPassword(auth, email, password)
             const token = await userCredential.user.getIdToken();
             authCtx.authenticate(token, userCredential.user);
         } catch (error: any) {

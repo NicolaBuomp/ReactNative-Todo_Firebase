@@ -26,8 +26,8 @@ function AuthContextProvider({ children }: any) {
 
     function authenticate(token: string, user: any) {
         setAuthToken(token);
-        setUser(user)
-        AsyncStorage.setItem('token', token)
+        setUser(user);
+        AsyncStorage.setItem('token', token);
     }
 
     function logout() {

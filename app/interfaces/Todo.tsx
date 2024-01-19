@@ -1,7 +1,7 @@
 export interface TODO {
     title: string,
     done: boolean,
-    id: string,
+    id: any,
     showTime: boolean,
     endDate: any
 }

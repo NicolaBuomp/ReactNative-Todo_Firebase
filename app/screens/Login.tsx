@@ -1,11 +1,11 @@
 import { Alert, StyleSheet, Text, View } from 'react-native'
 import React, { useContext, useState } from 'react'
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { AUTH } from '../../firebaseConfig';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { AuthContext } from '../../context/AuthContext';
 import { LoadingContext } from '../../context/LoadingContext';
 import { Button, IconButton, TextInput } from 'react-native-paper'
 import { useTheme } from '../../context/ThemeContext';
+import { auth } from '../../firebaseConfig';
 
 const LoginScreen = ({ navigation }: any) => {
     const [email, setEmail] = useState('test@test.com');
@@ -23,7 +23,7 @@ const LoginScreen = ({ navigation }: any) => {
     const handleLogin = async () => {
         loadingCtx.enableLoading()
         try {
-            const userCredential = await signInWithEmailAndPassword(AUTH, email, password)
+            const userCredential = await signInWithEmailAndPassword(auth, email, password)
             const token = await userCredential.user.getIdToken();
             authCtx.authenticate(token, userCredential.user);
         } catch (error: any) {

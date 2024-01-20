@@ -1,10 +1,9 @@
 import { StyleSheet, Text, View, Platform, Alert } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
-import moment from 'moment'
 import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates'
 import { Button, TextInput } from 'react-native-paper'
 import { useRoute } from '@react-navigation/native'
-import { parseDate } from '../../util/functions'
+import { formatDateForDisplay, parseDate } from '../../util/functions'
 import { useTheme } from '../../context/ThemeContext'
 import { FirebaseService } from '../service/firebase.service'
 import { useAuth } from '../hook/useAuth'
@@ -63,31 +62,40 @@ const FormTodo = ({ navigation }: any) => {
     );
 
     const addTodo = async () => {
-        let date = todoDate ? todoTime ? moment(todoDate).set({ 'hour': todoTime.hours, 'minute': todoTime.minutes }).format() : moment(todoDate).format() : null
+        let date = null;
+
+        if (todoDate) {
+            if (todoTime) {
+                const updatedTodoDate = new Date(todoDate);
+                updatedTodoDate.setHours(todoTime.hours);
+                updatedTodoDate.setMinutes(todoTime.minutes);
+                date = updatedTodoDate.toISOString();
+            } else {
+                date = new Date(todoDate).toISOString();
+            }
+        }
 
         const data = {
             title: todo,
             done: false,
-            showTime: todoTime ? true : false,
+            showTime: !!todoTime,
             endDate: date,
-            userId: user!.uid
-        }
+            userId: user?.uid
+        };
 
         try {
             if (!itemForUpdate) {
-                await firebaseService.postData('todos', data)
+                await firebaseService.postData('todos', data);
             } else {
-                await firebaseService.putData('todos', itemForUpdate.id, data)
+                await firebaseService.putData('todos', itemForUpdate.id, data);
             }
         } catch (error: any) {
-            Alert.alert('Errore', error)
+            Alert.alert('Errore', error.message || 'Si è verificato un errore durante l\'operazione.');
         } finally {
-            navigation.navigate('todos')
+            navigation.navigate('todos');
         }
+    };
 
-        
-
-    }
 
     return (
         <View style={{ ...styles.container, backgroundColor: theme.colors.background }}>
@@ -103,7 +111,11 @@ const FormTodo = ({ navigation }: any) => {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <Button onPress={() => setIsEnabledDate(true)} mode='contained' >Data</Button>
                         {
-                            todoDate ? <Text style={{ color: theme.colors.onBackground }}>{moment(itemForUpdate ? itemForUpdate.endDate : todoDate).format('LLLL')}</Text> : null
+                            todoDate ? (
+                                <Text style={{ color: theme.colors.onBackground }}>
+                                    {formatDateForDisplay(itemForUpdate ? itemForUpdate.endDate : todoDate)}
+                                </Text>
+                            ) : null
                         }
 
                     </View>

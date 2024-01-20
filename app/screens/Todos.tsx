@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, FlatList, Pressable, TouchableOpacity, Platform } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { Entypo, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
-import { formatMomentData } from '../../util/functions';
+import { formatNativeDate } from '../../util/functions';
 import { Divider, IconButton } from 'react-native-paper'
 import { useTheme } from '../../context/ThemeContext';
 import { TODO } from '../interfaces/Todo';
@@ -65,7 +65,7 @@ const Todos = ({ navigation }: any) => {
                                 {item.title}
                             </Text>
                             {item.endDate &&
-                                formatMomentData(item, theme.colors.onBackground)
+                                formatNativeDate(item, theme.colors.onBackground)
                             }
                         </View>
                     </View>

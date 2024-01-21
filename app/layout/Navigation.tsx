@@ -1,5 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react'
-import { AuthContext } from '../../context/AuthContext'
+import React from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import AuthScreens from './AuthScreens'
 import AuthenticatedScreens from './AuthenticatedScreens'
@@ -10,9 +9,6 @@ import { useAuth } from '../hook/useAuth'
 function Navigation() {
     const { user } = useAuth();
 
-    console.log(user);
-    
-    
     return (
         <NavigationContainer>
             <ThemeProvider>
